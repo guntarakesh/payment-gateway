@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <style>
+        .logout-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        #paymentForm {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #card-element {
+            height: 40px;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        h2{
+            margin-top:100px;
+        }
+        button{
+            color:white;
+            background-color: blue;
+            padding: 10px;
+            border: none;
+        }
+        #card-element{
+           
+        }
+    </style>
+</head>
+<script src="https://js.stripe.com/v3/"></script>
+
+<body>
+    <button class="logout-button" id="logoutButton">Logout</button>
+    <h2>Welcome to Payment Gateway</h2>
+    <form id="paymentForm">
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" name="amount" required>
+        <br><br>
+        <div id="card-element"> </div>
+        <button type="submit">Pay</button>
+    </form>
+
+    <script>
+        const stripe = Stripe('pk_test_51PQA1VKa6hBlbqG046iQn19vzM2JNmYhmaoYq2aaG197qvLvmwkobscmGeBM3qW2Yl6yWqNo7V9a9QfZVSeh9ERc00zkkQp9Tk');
+        const elements = stripe.elements();
+
+        const style = {
+            base: {
+                color: '#32325d',
+                fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '30x',
+                '::placeholder': {
+                    color: '#aab7c4'
+                }
+            },
+            invalid: {
+                color: '#fa755a',
+                iconColor: '#fa755a'
+            }
+        };
+
+        const cardElement = elements.create('card', { style: style });
+
+        cardElement.mount('#card-element');
+
+        const paymentForm = document.getElementById('paymentForm');
+        paymentForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            // const { token, error } = await stripe.createToken(cardElement);
+            // if (error) {
+            //     console.error('Error creating token:', error);
+            //     return;
+            // }
+
+            const amount = document.getElementById('amount').value;
+
+            if(amount<1) 
+        {
+            alert('minimum amount is 1USD to process payment')
+            return ;
+        }
+
+            const response = await fetch('/process-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'authorization':`Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ amount })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                alert('Payment successful!');
+                window.location.href = '/';
+            } else {
+                alert('Payment failed: ' + data.error);
+            }
+        });
+
+
+    </script>
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+        } else {
+            fetch('/', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch protected endpoint');
+                    }
+                    return;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    window.location.href = '/login';
+                });
+        }
+
+        document.getElementById('logoutButton').addEventListener('click', function () {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        });
+
+
+    </script>
+</body>
+
+</html>
